@@ -187,16 +187,21 @@
             var line = $('<div></div>').appendTo(pnl);
             $('<input type="hidden" data-datatype="int"></input>').attr('data-bind', 'id').appendTo(line);
             $('<input type="hidden" data-datatype="int"></input>').attr('data-bind', 'master').appendTo(line);
-            if (o.equipmentNames.length > 0) {
-                $('<div></div>').appendTo(line).pickList({
+            var nameId = $('<div></div>').appendTo(line).pickList({
                     required: true,
                     bindColumn: 0, displayColumn: 1, labelText: 'Name', binding: binding + 'nameId',
                     columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Defined Name', style: { whiteSpace: 'nowrap' } }],
                     items: o.equipmentNames, inputAttrs: { style: { width: "7rem" } }
                 }).appendTo(line);
+            if (o.equipmentNames.length > 0 && $('body').attr('data-controllertype') !== 'suntouch') {
+                nameId[0].required(true);
+                nameId.show();
             }
-            else
-                $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: { } } });
+            else {
+                var name = $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: {} } });
+                nameId.hide();
+                nameId[0].required(false);
+            }
             $('<div></div>').appendTo(line).pickList({ required: true,
                 bindColumn: 0, displayColumn: 2, labelText: 'Type', binding: binding + 'type',
                 columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'name', hidden: true, text: 'Code', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Circuit Function', style: { whiteSpace: 'nowrap' } }],
@@ -289,8 +294,12 @@
             dataBinder.bind(el, $.extend({}, obj, { eggTimerHours: hrs, eggTimerMinutes: mins }));
             // Can only delete and set address on REM circuits.
             // RSG - 6.22.22 - removed id not 1 or 6 so we can set the main pool/spa circuits #494
-            if (obj.master === 1){// && obj.id !== 1 && obj.id !== 6) { 
-                el.find('div#btnDeleteCircuit').show();
+            if (obj.master === 1) {// && obj.id !== 1 && obj.id !== 6) { 
+                // RKS: 09-14-22 - Remove the delete button from the pool/spa circuits.  These are placed
+                // by the controller and must be tied to REM if this is a Nixie controller.  Users should
+                // not be able to delete these.
+                if (obj.id !== 1 && obj.id !== 6) el.find('div#btnDeleteCircuit').show();
+                else el.find('div#btnDeleteCircuit').hide();
                 el.find('div.pnlDeviceBinding').show();
             }
             else {
@@ -323,15 +332,22 @@
             var pnl = acc.find('div.picAccordian-contents');
             var line = $('<div></div>').appendTo(pnl);
             $('<input type="hidden" data-datatype="int"></input>').attr('data-bind', 'id').appendTo(line);
-            if (o.equipmentNames.length > 0) {
-                $('<div></div>').appendTo(line).pickList({ required: true,
-                    bindColumn: 0, displayColumn: 1, labelText: 'Name', binding: binding + 'nameId',
-                    columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Defined Name', style: { whiteSpace: 'nowrap' } }],
-                    items: o.equipmentNames, inputAttrs: { style: { width: "7rem" } }
-                }).appendTo(line);
+            var nameId = $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Name', binding: binding + 'nameId',
+                columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Defined Name', style: { whiteSpace: 'nowrap' } }],
+                items: o.equipmentNames, inputAttrs: { style: { width: "7rem" } }
+            }).appendTo(line);
+            if (o.equipmentNames.length > 0 && $('body').attr('data-controllertype') !== 'suntouch') {
+                nameId.show();
+                nameId[0].required(true);
             }
-            else
-                $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: {} } });
+            else {
+                var name = $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: {} } });
+                nameId.hide();
+                nameId[0].required(false);
+            }
+
             $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 2, labelText: 'Type', binding: binding + 'type',
@@ -439,15 +455,30 @@
             var line = $('<div></div>').appendTo(pnl);
             $('<input type="hidden" data-datatype="int"></input>').attr('data-bind', 'id').appendTo(line);
             $('<input type="hidden" data-datatype="int"></input>').attr('data-bind', 'type').appendTo(line);
-            if (o.equipmentNames.length > 0) {
-                $('<div></div>').appendTo(line).pickList({ required: true,
-                    bindColumn: 0, displayColumn: 1, labelText: 'Name', binding: binding + 'nameId',
-                    columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Custom Name', style: { whiteSpace: 'nowrap' } }],
-                    items: o.equipmentNames, inputAttrs: { style: { width: "7rem" } }
-                }).appendTo(line);
+            var nameId = $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Name', binding: binding + 'nameId',
+                columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Defined Name', style: { whiteSpace: 'nowrap' } }],
+                items: o.equipmentNames, inputAttrs: { style: { width: "7rem" } }
+            }).appendTo(line);
+            if (o.equipmentNames.length > 0 && $('body').attr('data-controllertype') !== 'suntouch') {
+                nameId.show();
+                nameId[0].required(true);
             }
-            else
-                $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: {} } });
+            else {
+                var name = $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: {} } });
+                nameId.hide();
+                nameId[0].required(false);
+            }
+            //if (o.equipmentNames.length > 0) {
+            //    $('<div></div>').appendTo(line).pickList({ required: true,
+            //        bindColumn: 0, displayColumn: 1, labelText: 'Name', binding: binding + 'nameId',
+            //        columns: [{ binding: 'val', hidden: true, text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Custom Name', style: { whiteSpace: 'nowrap' } }],
+            //        items: o.equipmentNames, inputAttrs: { style: { width: "7rem" } }
+            //    }).appendTo(line);
+            //}
+            //else
+            //    $('<div></div>').appendTo(line).inputField({ required: true, labelText: 'Name', binding: binding + 'name', inputAttrs: { maxlength: 16 }, labelAttrs: { style: {} } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Show as Feature', binding: binding + 'showInFeatures', value: true });
 
             line = $('<div></div>').appendTo(pnl);

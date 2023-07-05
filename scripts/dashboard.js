@@ -6,6 +6,7 @@
             self._initState();
             el[0].receiveLogMessages = function (val) { self.receiveLogMessages(val); };
             el[0].receivePortStats = function (val) { self.receivePortStats(val); };
+            el[0].receiveScreenlogicStats = function (val) { self.receiveScreenlogicStats(val); };
             el[0].reset = function () { self._reset(); };
         },
         _clearPanels: function () {
@@ -134,6 +135,13 @@
                     self._createChemistryPanel(data);
                     self._createSchedulesPanel(data);
                     self._createFiltersPanel(data);
+                    if (typeof data.equipment !== 'undefined' && typeof data.equipment.messages !== 'undefined') {
+                        $('div.picSysMessages').each(function () {
+                            console.log('binding messages');
+                            this.dataBind(data.equipment.messages);
+                        });
+                    }
+
                     console.log(data);
                     self.receivePortStats(o.sendPortStatus);
                 })
@@ -177,7 +185,6 @@
                     self._initSockets();
                     console.log(data);
                     console.log('initializing element order');
-
 
                     if (typeof getStorage('--number-of-columns') === 'undefined') setStorage('--number-of-columns', $(':root').css('--number-of-columns'));
                     $(':root').css('--number-of-columns', getStorage('--number-of-columns'));
@@ -254,6 +261,13 @@
                 console.log({ msg: 'Connecting socket through proxy', url: window.location.origin.toString(), path: path });
                 o.socket = io(window.location.origin.toString(), { path: path, reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000, upgrade: true });
             }
+            o.socket.on('sysmessages', function (data) {
+                console.log({ evt: 'sysmessages', data: data, controls: $('div.picSysMessages') });
+                $('div.picSysMessages').each(function () {
+                    this.dataBind(data);
+                });
+            });
+
             o.socket.on('circuit', function (data) {
                 console.log({ evt: 'circuit', data: data });
                 var circs = $('div.picCircuit[data-eqid=' + data.id + ']');
@@ -272,6 +286,9 @@
                 $('div.picVirtualCircuit[data-circuitid=' + data.id + ']').each(function () {
                     this.setState(data);
                 });
+            });
+            o.socket.on('equipmentMessage', function (data) {
+                console.log({ evt: 'equipmentMessage', data: data });
             });
             o.socket.on('circuitGroup', function (data) {
                 console.log({ evt: 'circuitGroup', data: data });
@@ -394,13 +411,25 @@
                 console.log({ evt: 'logMessage', data: data });
             });
             o.socket.on('rs485Stats', function (data) {
-                console.log({ evt: 'rs485Stats', data: data });
+                //console.log({ evt: 'rs485Stats', data: data });
                 var rs485Displays = el.find(`div.pnl-rs485Stats`);
                 rs485Displays.each(function () {
-                    if($(this).attr('data-portid') === data.portId.toString()) this.dataBind(data);
+                    if ($(this).attr('data-portid') === data.portId.toString()) this.dataBind(data);
                 });
                 // Turn it off if there are no displays out there.
                 if (rs485Displays.length === 0) self.receivePortStats(false);
+            });
+            o.socket.on('screenlogicStats', function (data) {
+                console.log({ evt: 'rs485Stats', data: data });
+                var screenlogic = el.find(`div.pnl-screenlogicStats`);
+                data.connecting = data.connecting ? 'true' : 'false';
+                data.destroyed = data.destroyed ? 'true' : 'false';
+                screenlogic.each(function () {
+                    this.dataBind({screenlogic: data});
+                });
+                if (screenlogic.length === 0){
+                    self.receiveScreenlogicStats(false);
+                }
             });
             o.socket.on('chemController', function (data) {
                 console.log({ evt: 'chemController', data: data });
@@ -408,8 +437,19 @@
                 el.find(`div.pnl-chemcontroller-settings[data-eqid="${data.id}"]`).each(function () { this.setEquipmentData(data); });
 
             });
+            o.socket.on('chemDoser', function (data) {
+                console.log({ evt: 'chemDoser', data: data });
+                el.find('div.picChemistry').each(function () { this.setChemDoserData(data); });
+                el.find(`div.pnl-chemdoser-settings[data-eqid="${data.id}"]`).each(function () { this.setEquipmentData(data); });
+            });
+
             o.socket.on('chemicalDose', (data) => {
-                console.log({ evt: 'chemDose', data: data });
+                console.log({ evt: 'chemicalDose', data: data });
+                if (data.method === 'calibration') {
+                    $('div.chemCalibrateStatus').each(function () {
+                        if ($(this).attr('data-chemical').toLowerCase() === data.type.toLowerCase()) this.dataBind(data);
+                    });
+                }
             });
             o.socket.on('heater', function (data) {
                 console.log({ evt: 'heater', data: data });
@@ -453,9 +493,9 @@
                 console.log({ msg: 'socket closed:', sock: sock });
                 o.isConnected = false;
             });
-            o.socket.on('*', function (event, data) {
-                console.log({ evt: event, data: data });
-            });
+            //o.socket.onAny((e, data) => {
+            //    console.log({ any: e, data: data });
+            //});
         },
         receiveLogMessages: function (val) {
             var self = this, o = self.options, el = self.element;
@@ -473,6 +513,16 @@
                 if (typeof val !== 'undefined') {
                     console.log(`sendPortStatus Emit ${val}`);
                     o.socket.emit('sendRS485PortStats', makeBool(val));
+                    o.sendPortStatus = makeBool(val);
+                }
+            }
+        },
+        receiveScreenlogicStats: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (o.isConnected) {
+                if (typeof val !== 'undefined') {
+                    console.log(`sendScreenlogicStatus Emit ${val}`);
+                    o.socket.emit('sendScreenlogicStats', makeBool(val));
                     o.sendPortStatus = makeBool(val);
                 }
             }

@@ -1,6 +1,6 @@
 {
   "name": "nodejs-poolcontroller-dashpanel",
-  "version": "7.7.0",
+  "version": "8.0.0",
   "description": "Dashboard Panel",
   "main": "dist/app.js",
   "author": {
@@ -18,17 +18,16 @@
     "watch": "tsc -w"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^6.1.1",
+    "@fortawesome/fontawesome-free": "^6.2.0",
     "express": "^4.18.1",
     "extend": "^3.0.2",
-    "jquery": "^3.6.0",
-    "jquery-ui": "^1.13.1",
+    "jquery": "^3.6.1",
+    "jquery-ui": "^1.13.2",
     "jquery-ui-dist": "^1.13.1",
     "jquery-ui-touch-punch-c": "^1.4.0",
-    "multer": "^1.4.4",
     "node-ssdp": "^4.0.1",
-    "socket.io": "^4.5.0",
-    "socket.io-client": "^4.5.0",
+    "socket.io": "^4.5.2",
+    "socket.io-client": "^4.5.2",
     "winston": "^3.7.2"
   },
   "devDependencies": {
@@ -36,7 +35,12 @@
     "@types/extend": "^3.0.1",
     "@types/multer": "^1.4.7",
     "@types/node": "^12.20.52",
+    "multer": "^1.4.5-lts.1",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.4"
+  },
+  "engines": {
+    "npm": ">=8.0.0",
+    "node": ">=16.0.0"
   }
 }

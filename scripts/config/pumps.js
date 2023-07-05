@@ -76,7 +76,7 @@
             }
             let ports = $('<div></div>').appendTo(line).pickList({
                 required: true, bindColumn: 0, displayColumn: 1, labelText: 'Port', binding: binding + 'portId', value: 0,
-                columns: [{ binding: 'portId', hidden: true, text: 'portId', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Port', style: { whiteSpace: 'nowrap' } }],
+                columns: [{ binding: 'portId', hidden: true, text: 'portId', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Port', style: { whiteSpace: 'nowrap' } }, { binding: 'rs485Port', text: 'Path', style: { whiteSpace: 'nowrap' } }],
                 items: o.rs485ports, inputAttrs: { style: { width: '5rem' } }, labelAttrs: { style: { width: '3.25rem' } }
             });
             if (!isNixie) ports.hide();
@@ -104,7 +104,7 @@
                 var v = dataBinder.fromElement(p);
                 // Go back to the server and get the list of all installed pumps at the moment.
                 if (dataBinder.checkRequired(p)) {
-                    $.getApiService('/config/options/pumps', null, function (opts, status, xhr) {
+                    $.getApiService('/config/options/pumps', null, 'Saving Pump...', function (opts, status, xhr) {
                         console.log(v);
                         var valid = true;
                         // Verify all the addresses are unique.
@@ -139,7 +139,6 @@
                             }
                         }
                         if (valid) {
-                            console.log(v);
                             $.putApiService('/config/pump', v, 'Saving Pump...', function (data, status, xhr) {
                                 console.log(data);
                                 self.dataBind(data);

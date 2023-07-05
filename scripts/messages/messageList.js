@@ -497,7 +497,7 @@ mhelper.init();
             var self = this, o = self.options, el = self.element;
             if (o.changesOnly && obj.hasChanged === false) return true;
             let msg = o.messages[`m${obj.rowId}`];
-            if (o.portFilters.includes(msg.port)) return true;
+            if (o.portFilters.includes(msg.portId)) return true;
             if (o.filters.includes(msg.messageKey)) return true;
             return false;
         },
@@ -525,6 +525,7 @@ mhelper.init();
                 selectionType: 'single',
                 columns: [
                     { width: '18px', header: { label: '' }, data: { elem: $('<i></i>').addClass('far fa-clipboard').appendTo($('<span></span>')) } },
+                    { width: '18px', header: { label: 'Port', attrs: { title: 'Port\r\nID 0, 1, etc' } } },
                     { width: '37px', header: { label: 'Id', style: { textAlign: 'center' } }, data: { style: { textAlign: 'right' } } },
                     { width: '18px', header: { label: 'Dir', attrs: { title: 'The direction of the message\r\nEither in or out' } } },
                     { width: '18px', header: { label: 'Chg', attrs: { title: 'Indicates whether the message is\r\n1. A new message\r\n2. A change from previous\r\n3. A duplicate of the previous instance' } } },
@@ -1067,23 +1068,24 @@ mhelper.init();
             var row = obj.row;
             var r = row[0];
             row.attr('data-msgdir', msg.direction);
-            row.attr('data-port', msg.port);
+            row.attr('data-port', msg.portId);
             row.addClass('msgRow');
             var ctx = msgManager.getListContext(msg);
             o.contexts[ctx.messageKey] = ctx;
             if ((typeof msg.isValid !== 'undefined' && !msg.isValid) || (typeof msg.valid !== 'undefined' && !msg.valid)) row.addClass('invalid');
 
-            $('<span></span>').text(msg._id).appendTo(r.cells[1]);
+            $('<span></span>').text(msg.portId).appendTo(r.cells[1]);
+            $('<span></span>').text(`${msg._id}${msg.tries>=1?'-'+msg.tries:''}`).appendTo(r.cells[2]);
             var dir = $('<i></i>').addClass('fas').addClass(msg.direction === 'out' ? 'fa-arrow-circle-left' : 'fa-arrow-circle-right');
-            $('<span></span>').append(dir).appendTo(r.cells[2]);
-            var spChg = $('<span class="changed"></span>').appendTo(r.cells[3]);
+            $('<span></span>').append(dir).appendTo(r.cells[3]);
+            var spChg = $('<span class="changed"></span>').appendTo(r.cells[4]);
             var chg = $('<i class="fas"></i>').appendTo(spChg);
-            $('<span></span>').text(ctx.protocol.name).appendTo(r.cells[4]);
-            $('<span></span>').text(ctx.sourceAddr.name).appendTo(r.cells[5]);
-            $('<span></span>').text(ctx.destAddr.name).appendTo(r.cells[6]);
-            $('<span></span>').text(ctx.actionByte).appendTo(r.cells[7]);
-            $(r.cells[7]).attr('title', ctx.actionName).addClass('msg-action');
-            if (typeof msg.payload !== 'undefined' && typeof msg.payload.join === 'function') $('<span></span>').text(msg.payload.join(',')).appendTo(r.cells[8]);
+            $('<span></span>').text(ctx.protocol.name).appendTo(r.cells[5]);
+            $('<span></span>').text(ctx.sourceAddr.name).appendTo(r.cells[6]);
+            $('<span></span>').text(ctx.destAddr.name).appendTo(r.cells[7]);
+            $('<span></span>').text(ctx.actionByte).appendTo(r.cells[8]);
+            $(r.cells[8]).attr('title', ctx.actionName).addClass('msg-action');
+            if (typeof msg.payload !== 'undefined' && typeof msg.payload.join === 'function') $('<span></span>').text(msg.payload.join(',')).appendTo(r.cells[9]);
             else console.log(msg);
             var prev = o.messageKeys[ctx.messageKey];
             var hasChanged = false;
@@ -1106,8 +1108,8 @@ mhelper.init();
             //row.data('message', msg); Can't store jquery data. Create our own message cache.
             o.messages['m' + obj.rowId] = msg;
             o.rowIds.push({ rowId: obj.rowId, msgId: msg._id });
-            if (typeof msg.port !== 'undefined' && !o.ports.includes(msg.port)) {
-                o.ports.push(parseInt(msg.port, 10));
+            if (typeof msg.portId !== 'undefined' && !o.ports.includes(msg.portId)) {
+                o.ports.push(parseInt(msg.portId, 10));
             }
             row.attr('data-msgkey', ctx.messageKey);
             row.attr('data-dockey', ctx.docKey);
@@ -1151,7 +1153,79 @@ mhelper.init();
             obj.hasChanged = true;
             obj.isApiCall = true;
             row.attr('data-msgid', msg._id);
-            row.attr('data-port', msg.port);
+            row.attr('data-portId', msg.portId);
+            o.messages['m' + obj.rowId] = msg;
+            obj.hidden = self._calcMessageFilter(obj);
+
+        },
+        _bindVListScreenLogicRow(obj, msg, autoSelect) {
+            var self = this, o = self.options, el = self.element;
+            var row = obj.row;
+            var r = row[0];
+            msg.messageKey = `${msg.systemName}${msg.action}`;
+            o.contexts[msg.messageKey] = {
+                protocol: { name: 'screenlogic', desc: 'ScreenLogic' }, 
+                action: msg.action };
+            row.attr('data-msgdir', msg.direction);
+            // row.attr('data-port', msg.portId);
+            row.addClass('msgRow');
+            var ctx = msgManager.getListContext(msg);
+            o.contexts[ctx.messageKey] = ctx;
+            if ((typeof msg.isValid !== 'undefined' && !msg.isValid) || (typeof msg.valid !== 'undefined' && !msg.valid)) row.addClass('invalid');
+
+            $('<span></span>').text(msg.controllerId).appendTo(r.cells[1]);
+            $('<span></span>').text(`${msg._id}`).appendTo(r.cells[2]);
+            var dir = $('<i></i>').addClass('fas').addClass(msg.direction === 'out' ? 'fa-arrow-circle-left' : 'fa-arrow-circle-right');
+            $('<span></span>').append(dir).appendTo(r.cells[3]);
+            var spChg = $('<span class="changed"></span>').appendTo(r.cells[4]);
+            var chg = $('<i class="fas"></i>').appendTo(spChg);
+            $('<span></span>').text(ctx.protocol.name).appendTo(r.cells[5]);
+            $('<span></span>').text(ctx.sourceAddr.name).appendTo(r.cells[6]);
+            $('<span></span>').text(ctx.destAddr.name).appendTo(r.cells[7]);
+            $('<span></span>').text(ctx.actionByte).appendTo(r.cells[8]);
+            $(r.cells[8]).attr('title', ctx.actionName).addClass('msg-action');
+            if (typeof msg.payload !== 'undefined' && typeof msg.payload.join === 'function') $('<span></span>').text(msg.payload.join(',')).appendTo(r.cells[9]);
+            else console.log(msg);
+            var prev = o.messageKeys[ctx.messageKey];
+            var hasChanged = false;
+            if (typeof prev === 'undefined')
+                hasChanged = true;
+            else if (msgManager.isMessageDiff(msg, prev, ctx))
+                hasChanged = true;
+            if (hasChanged) {
+                row.addClass('changed');
+                typeof prev === 'undefined' ? spChg.addClass('new') : spChg.addClass('changed');
+                chg.addClass('fa-dot-circle');
+            }
+            else
+                row.addClass('nochange');
+            //if (o.changesOnly && !hasChanged) obj.hidden = true;
+
+            o.messageKeys[ctx.messageKey] = msg;
+            msg.rowId = obj.rowId;
+            msg.messageKey = ctx.messageKey;
+            //row.data('message', msg); Can't store jquery data. Create our own message cache.
+            o.messages['m' + obj.rowId] = msg;
+            o.rowIds.push({ rowId: obj.rowId, msgId: msg._id });
+            if (typeof msg.portId !== 'undefined' && !o.ports.includes(msg.portId)) {
+                o.ports.push(parseInt(msg.portId, 10));
+            }
+            row.attr('data-msgkey', ctx.messageKey);
+            row.attr('data-dockey', ctx.docKey);
+            row.attr('data-msgid', msg._id);
+            obj.hasChanged = hasChanged;
+            obj.hidden = self._calcMessageFilter(obj);
+            if (typeof prev !== 'undefined') obj.prevId = prev.rowId;
+            if (!o.pinScrolling) {
+                if (!o.changesOnly || (o.changesOnly && hasChanged)) {
+                    self.selectRowByIndex(obj.rowId, true);
+                }
+            }
+
+
+            obj.hasChanged = true;
+            row.attr('data-msgid', msg._id);
+            // row.attr('data-portId', msg.portId);
             o.messages['m' + obj.rowId] = msg;
             obj.hidden = self._calcMessageFilter(obj);
 
@@ -1161,6 +1235,7 @@ mhelper.init();
             var row = obj.row;
             var r = row[0];
             if (msg.protocol === 'api') self._bindVListApiRow(obj, msg, autoSelect);
+            else if (msg.protocol === 'screenlogic') self._bindVListScreenLogicRow(obj, msg, autoSelect);
             else self._bindVListMessageRow(obj, msg, autoSelect);
         },
         selectRowByIndex: function (ndx, scroll) {
@@ -1179,7 +1254,7 @@ mhelper.init();
             var ctx = msgManager.getListContext(msg);
             o.contexts[ctx.docKey] = ctx;
             row.attr('data-msgdir', msg.direction);
-            row.attr('data-port', msg.port);
+            row.attr('data-portId', msg.portId);
             (msg.direction === 'out') ? row.addClass('outbound') : row.addClass('inbound');
             $('<span></span>').text(ctx.protocol.name).appendTo($('<td></td>').appendTo(row));
             $('<span></span>').text(ctx.sourceAddr.name).appendTo($('<td></td>').appendTo(row));
@@ -1278,7 +1353,7 @@ mhelper.init();
             var line = $('<div class="dataline"><div>').appendTo(div);
             line = $('<div class="dataline"><div>').appendTo(div);
             $('<label>Port:</label>').appendTo(line);
-            $('<span></span>').appendTo(line).attr('data-bind', 'port');
+            $('<span></span>').appendTo(line).attr('data-bind', 'portId');
 
             line = $('<div class="dataline"><div>').appendTo(div);
             $('<label>Protocol:</label>').appendTo(line);
@@ -1407,7 +1482,7 @@ mhelper.init();
             el.find('div.msg-detail-info').show();
             el.find('div.api-detail-info').hide();
             var obj = {
-                port: 0,
+                portId: 0,
                 protocol: '',
                 title: '',
                 source: '',
@@ -1427,7 +1502,7 @@ mhelper.init();
                 o.context = ctx;
                 obj = {
                     isValid: msg.valid || msg.isValid,
-                    port: msg.port,
+                    portId: msg.portId,
                     protocol: ctx.protocol.desc,
                     source: ctx.sourceAddr.name,
                     sourceByte: ctx.sourceByte,
@@ -1438,9 +1513,9 @@ mhelper.init();
                     timestamp: msg.timestamp,
                     dataLen: msg.payload.length,
                     direction: msg.direction === 'in' ? 'Inbound ' : 'Outbound ',
-                    header: msg.header.join(','),
-                    padding: msg.padding.join(','),
-                    term: msg.term.join(','),
+                    header: typeof msg.header !== 'undefined' ? msg.header.join(',') : [],
+                    padding: typeof msg.padding !== 'undefined' ? msg.padding.join(',') : [],
+                    term: typeof msg.term !== 'undefined' ? msg.term.join(',') : [],
                     responseFor: ''
                 };
                 if (typeof msg.responseFor !== 'undefined' && msg.responseFor.length > 0 && typeof msgFor !== 'undefined') {
@@ -2364,7 +2439,7 @@ mhelper.init();
                     msgList.addBulkMessage({
                         isValid: typeof msg.valid !== 'undefined' ? msg.valid : typeof msg.isValid !== 'undefined' ? msg.isValid : true,
                         _id: msg.id,
-                        port: typeof msg.port !== 'undefined' ? msg.port : msg.portId,
+                        portId: typeof msg.port !== 'undefined' ? msg.port : msg.portId,
                         responseFor: msg.for,
                         protocol: msg.proto,
                         direction: msg.dir,

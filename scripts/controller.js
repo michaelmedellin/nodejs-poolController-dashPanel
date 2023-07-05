@@ -34,6 +34,7 @@
             let row = $('<div class="picHeaderRow picControllerTitle control-panel-title"></div>').appendTo(el);
             $('<div class= "picModel"><i class="fas fa-bars"></i><span class="picModelData"></span></div>').appendTo(row);
             $('<div class="picControllerTime"><span class="picControllerTime"></span></div>').appendTo(row);
+            $('<div></div>').appendTo(row).sysMessageIcon({hideOnEmpty: true}).addClass('picSysMessages');
             if ($('div.dashOuter').length) {
                 var divStatus = $('<div></div>').addClass('picControllerStatus').appendTo(row);
                 var cstatus = $('<div></div>').appendTo(divStatus)
@@ -55,7 +56,6 @@
 
             }
             console.log('jQuery:' + jQuery.fn.jquery + ' jQueryUI:' + ($.ui.version || 'pre 1.6'));
-
             row = $('<div class="picFreezeProtect" data-status="off"><i class="fas fa-snowflake burst-animated"></i><label>FREEZE PROTECTION</label><i class="fas fa-snowflake burst-animated"></i></div>');
             row.appendTo(el);
             row = $('<div class="picPanelMode" data-status="auto"><i class="far fa-pause-circle burst-animated"></i><label></label><span class="service-timeout-remaining"></span><i class="far fa-pause-circle burst-animated"></i></div>');
@@ -403,17 +403,6 @@
                 btn = $('<div class="logger"></div>').appendTo(divLine).optionButton({ text: 'File', bind: 'app.logToFile' });
 
 
-
-                //var selApp = $('<select data-bind="app.level"></select>');
-                //selApp.appendTo(divLine);
-                //$('<option value="info">Info</option>').appendTo(selApp);
-                //$('<option value="debug">Debug</option>').appendTo(selApp);
-                //$('<option value="warn">Warn</option>').appendTo(selApp);
-                //$('<option value="verbose">Verbose</option>').appendTo(selApp);
-                //$('<option value="error">Error</option>').appendTo(selApp);
-                //$('<option value="silly">Silly</option>').appendTo(selApp);
-                //$('').appendTo(divLine);
-
                 grp = $('<fieldset></fieldset>');
                 leg = $('<legend></legend>').appendTo(grp);
 
@@ -461,17 +450,36 @@
                 divLine = $('<div class="picPacketLogging"><label></label></div>').appendTo(grp);
 
                 btn = $('<div class="logger"></div>').appendTo(divLine).optionButton({ text: 'Invalid', bind: 'packet.invalid' });
-                divLine = $('<div class="picPacketLogging"><label></label></div>').appendTo(grp);
 
-                //btn = $('<div class="logger"></div>').appendTo(divLine).optionButton({ text: 'Replay', bind: 'packet.replay' });
+
+
 
                 contents.on('click', 'div.picOptionButton.logger', function (evt) {
                     var opt = $(evt.currentTarget);
                     var obj = dataBinder.fromElement(opt);
                     $.putApiService('app/logger/setOptions', obj);
                 });
+
+                grp = $('<fieldset></fieldset>');
+                leg = $('<legend></legend>').appendTo(grp);
+
+                grp.appendTo(divOuter);
+                btn = $('<div class="logger"></div>').appendTo(leg).optionButton({ text: 'Screenlogic', bind: 'screenlogic.enabled' });
+
+                divLine = $('<div class="picPacketLogging"><label>Log to</label></div>');
+                divLine.appendTo(grp);
+
+
+                btn = $('<div class="logger"></div>').appendTo(divLine).optionButton({ text: 'Console', bind: 'screenlogic.logToConsole' });
+                btn = $('<div class="logger"></div>').appendTo(divLine).optionButton({ text: 'File', bind: 'screenlogic.logToFile' });
+        
+                contents.on('click', 'div.picOptionButton.logger', function (evt) {
+                    var opt = $(evt.currentTarget);
+                    var obj = dataBinder.fromElement(opt);
+                    $.putApiService('app/logger/setOptions', obj);
+                });
                 var btnPnl = $('<div class="picBtnPanel btn-panel"></div>');
-                btnPnl.appendTo(grp);
+                btnPnl.appendTo(divOuter);
 
                 var btnStartCapture = $('<div></div>');
                 btnStartCapture.appendTo(btnPnl).actionButton({ text: 'Capture Replay', icon: '<i class="fas fa-bug"></i>' });
@@ -1073,7 +1081,7 @@
                     }
                     let divStats = $('<div></div>').appendTo($div).css({ paddingLeft: '1em' });
                     $('<div class="picOptionLine"><label>Firmware</label><span>' + data.equipment.softwareVersion + '</span></div>').appendTo(divStats);
-                    $('<div class="picOptionLine"><label>Schedules</label><span>' + data.schedules.length + '</span></div>').appendTo(divStats);
+                    //$('<div class="picOptionLine"><label>Schedules</label><span>' + data.schedules.length + '</span></div>').appendTo(divStats);
                     $('<div class="picOptionLine"><label>Circuits</label><span>' + data.circuits.length + '</span></div>').appendTo(divStats);
                     $('<div class="picOptionLine"><label>Features</label><span>' + data.features.length + '</span></div>').appendTo(divStats);
                     $('<div class="picOptionLine"><label>Valves</label><span>' + data.valves.length + '</span></div>').appendTo(divStats);
@@ -1528,20 +1536,22 @@
                 if (!fileOpts.options.njsPC) cb.disabled(true);
 
                 dataBinder.bind(selectOpts, fileOpts);
-                for (let i = 0; i < fileOpts.options.servers.length; i++) {
-                    let srv = fileOpts.options.servers[i];
-                    line = $('<div></div>').appendTo(restoreOpts);
-                    $('<input></input>').appendTo(line).attr('type', 'hidden').attr('data-bind', `options.servers[${i}].uuid`).val(srv.uuid);
-                    $('<input></input>').appendTo(line).attr('type', 'hidden').attr('data-bind', `options.servers[${i}].name`).val(srv.name);
-                    $('<input></input>').appendTo(line).attr('type', 'hidden').attr('data-bind', `options.servers[${i}].host`).val(srv.host);
-                    cb = $('<div></div>').appendTo(line).checkbox({ labelText: srv.name, binding: `options.servers[${i}].restore` });
-                    if (!srv.backup) line.hide();
-                    else if (!srv.success) cb[0].disabled(true);
-                    cb[0].val(srv.backup && srv.success);
-                    if (typeof srv.errors !== 'undefined' && srv.errors.length > 0) {
-                        for (let j = 0; j < srv.errors.length; j++) {
-                            line = $('<div></div>').css({ paddingLeft: '2rem', fontSize:'.7em'}).appendTo(restoreOpts);
-                            $('<span></span>').appendTo(line).text(srv.errors[j]);
+                if (typeof fileOpts.options.servers !== 'undefined') {
+                    for (let i = 0; i < fileOpts.options.servers.length; i++) {
+                        let srv = fileOpts.options.servers[i];
+                        line = $('<div></div>').appendTo(restoreOpts);
+                        $('<input></input>').appendTo(line).attr('type', 'hidden').attr('data-bind', `options.servers[${i}].uuid`).val(srv.uuid);
+                        $('<input></input>').appendTo(line).attr('type', 'hidden').attr('data-bind', `options.servers[${i}].name`).val(srv.name);
+                        $('<input></input>').appendTo(line).attr('type', 'hidden').attr('data-bind', `options.servers[${i}].host`).val(srv.host);
+                        cb = $('<div></div>').appendTo(line).checkbox({ labelText: srv.name, binding: `options.servers[${i}].restore` });
+                        if (!srv.backup) line.hide();
+                        else if (!srv.success) cb[0].disabled(true);
+                        cb[0].val(srv.backup && srv.success);
+                        if (typeof srv.errors !== 'undefined' && srv.errors.length > 0) {
+                            for (let j = 0; j < srv.errors.length; j++) {
+                                line = $('<div></div>').css({ paddingLeft: '2rem', fontSize: '.7em' }).appendTo(restoreOpts);
+                                $('<span></span>').appendTo(line).text(srv.errors[j]);
+                            }
                         }
                     }
                 }
